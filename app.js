@@ -1,36 +1,104 @@
-const todoForm = document.querySelector("form");
+const todoForm = document.getElementById("todo-form");
 const todoInput = document.getElementById("todo-input");
 const todoListUL = document.getElementById("todo-list");
-const clearbtn = document.getElementById("clear");
+const clearBtn = document.getElementById("clear");
+const tabButtons = document.querySelectorAll(".tab-btn");
 
-let allTodos = getTodos();
-updateTodoList();
+// Current storage type (default: local)
+let currentStorage = "local";
+
+// Initialize the app
+initApp();
+
+// Event listeners
 todoForm.addEventListener("submit", (e) => {
 	e.preventDefault();
 	addTodo();
 });
 
+clearBtn.addEventListener("click", () => {
+	clearAllTodos();
+});
+
+tabButtons.forEach((btn) => {
+	btn.addEventListener("click", () => {
+		// Update active tab
+		tabButtons.forEach((b) => b.classList.remove("active"));
+		btn.classList.add("active");
+
+		// Update current storage type
+		currentStorage = btn.getAttribute("data-storage");
+
+		// Update todo list
+		updateTodoList();
+	});
+});
+
+// Initialize the app
+function initApp() {
+	updateTodoList();
+}
+
+// Add a new todo
 function addTodo() {
-	const todoText = todoInput.value;
+	const todoText = todoInput.value.trim();
 	if (todoText.length > 0) {
 		const todoObj = {
 			text: todoText,
 			completed: false,
 		};
+
+		// Get current todos
+		const allTodos = getTodos();
+
+		// Add new todo
 		allTodos.push(todoObj);
+
+		// Save todos
+		saveTodos(allTodos);
+
+		// Update UI
 		updateTodoList();
-		saveTodos();
+
+		// Clear input
 		todoInput.value = "";
 	}
 }
+
+// Update the todo list UI
 function updateTodoList() {
+	// Get todos from current storage
+	const allTodos = getTodos();
+
+	// Clear the list
 	todoListUL.innerHTML = "";
+
+	// Add storage indicator
+	const storageIndicator = document.createElement("div");
+	storageIndicator.className = "storage-indicator";
+
+	switch (currentStorage) {
+		case "local":
+			storageIndicator.textContent = "Using localStorage";
+			break;
+		case "session":
+			storageIndicator.textContent = "Using sessionStorage";
+			break;
+		case "cookie":
+			storageIndicator.textContent = "Using cookies";
+			break;
+	}
+
+	todoListUL.appendChild(storageIndicator);
+
+	// Add todos to the list
 	allTodos.forEach((todo, todoIndex) => {
-		todoItem = createTodoItem(todo, todoIndex);
-		todoListUL.append(todoItem);
+		const todoItem = createTodoItem(todo, todoIndex);
+		todoListUL.appendChild(todoItem);
 	});
-	clearAllTodos();
 }
+
+// Create a todo item element
 function createTodoItem(todo, todoIndex) {
 	const todoText = todo.text;
 	const todoId = "todo-" + todoIndex;
@@ -52,37 +120,106 @@ function createTodoItem(todo, todoIndex) {
                     </svg>
                 </button>
     `;
+
+	// Add event listener for delete button
 	const deleteButton = todoLI.querySelector(".delete-button");
 	deleteButton.addEventListener("click", () => {
 		deleteTodoItem(todoIndex);
 	});
+
+	// Add event listener for checkbox
 	const checkbox = todoLI.querySelector("input");
 	checkbox.addEventListener("change", () => {
+		const allTodos = getTodos();
 		allTodos[todoIndex].completed = checkbox.checked;
-		saveTodos();
+		saveTodos(allTodos);
 	});
+
+	// Set checkbox state
 	checkbox.checked = todo.completed;
+
 	return todoLI;
 }
+
+// Delete a todo item
 function deleteTodoItem(todoIndex) {
-	allTodos = allTodos.filter((_, i) => {
-		return i !== todoIndex;
-	});
-	saveTodos();
+	let allTodos = getTodos();
+	allTodos = allTodos.filter((_, i) => i !== todoIndex);
+	saveTodos(allTodos);
 	updateTodoList();
 }
-function saveTodos() {
-	const todosJson = JSON.stringify(allTodos);
-	localStorage.setItem("todos", todosJson);
-}
-function getTodos() {
-	const todos = localStorage.getItem("todos") || "[]";
-	return JSON.parse(todos);
-}
+
+// Clear all todos
 function clearAllTodos() {
-	clearbtn.addEventListener("click", () => {
-		localStorage.clear();
-		allTodos = [];
-		updateTodoList();
-	});
+	switch (currentStorage) {
+		case "local":
+			localStorage.removeItem("todos");
+			break;
+		case "session":
+			sessionStorage.removeItem("todos");
+			break;
+		case "cookie":
+			deleteCookie("todos");
+			break;
+	}
+	updateTodoList();
+}
+
+// Get todos from current storage
+function getTodos() {
+	let todosJson = "[]";
+
+	switch (currentStorage) {
+		case "local":
+			todosJson = localStorage.getItem("todos") || "[]";
+			break;
+		case "session":
+			todosJson = sessionStorage.getItem("todos") || "[]";
+			break;
+		case "cookie":
+			todosJson = getCookie("todos") || "[]";
+			break;
+	}
+
+	return JSON.parse(todosJson);
+}
+
+// Save todos to current storage
+function saveTodos(todos) {
+	const todosJson = JSON.stringify(todos);
+
+	switch (currentStorage) {
+		case "local":
+			localStorage.setItem("todos", todosJson);
+			break;
+		case "session":
+			sessionStorage.setItem("todos", todosJson);
+			break;
+		case "cookie":
+			setCookie("todos", todosJson, 30); // 30 days expiration
+			break;
+	}
+}
+
+function setCookie(name, value, days) {
+	const expires = new Date();
+	expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
+	document.cookie = `${name}=${encodeURIComponent(
+		value
+	)};expires=${expires.toUTCString()};path=/`;
+}
+
+function getCookie(name) {
+	const cookies = document.cookie.split(";");
+	for (let cookie of cookies) {
+		cookie = cookie.trim();
+		if (cookie.startsWith(name + "=")) {
+			return decodeURIComponent(cookie.substring(name.length + 1));
+		}
+	}
+	return "";
+}
+
+function deleteCookie(name) {
+	document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
 }
