@@ -4,13 +4,10 @@ const todoListUL = document.getElementById("todo-list");
 const clearBtn = document.getElementById("clear");
 const tabButtons = document.querySelectorAll(".tab-btn");
 
-// Current storage type (default: local)
 let currentStorage = "local";
 
-// Initialize the app
 initApp();
 
-// Event listeners
 todoForm.addEventListener("submit", (e) => {
 	e.preventDefault();
 	addTodo();
@@ -22,24 +19,19 @@ clearBtn.addEventListener("click", () => {
 
 tabButtons.forEach((btn) => {
 	btn.addEventListener("click", () => {
-		// Update active tab
 		tabButtons.forEach((b) => b.classList.remove("active"));
 		btn.classList.add("active");
 
-		// Update current storage type
 		currentStorage = btn.getAttribute("data-storage");
 
-		// Update todo list
 		updateTodoList();
 	});
 });
 
-// Initialize the app
 function initApp() {
 	updateTodoList();
 }
 
-// Add a new todo
 function addTodo() {
 	const todoText = todoInput.value.trim();
 	if (todoText.length > 0) {
@@ -48,32 +40,23 @@ function addTodo() {
 			completed: false,
 		};
 
-		// Get current todos
 		const allTodos = getTodos();
 
-		// Add new todo
 		allTodos.push(todoObj);
 
-		// Save todos
 		saveTodos(allTodos);
 
-		// Update UI
 		updateTodoList();
 
-		// Clear input
 		todoInput.value = "";
 	}
 }
 
-// Update the todo list UI
 function updateTodoList() {
-	// Get todos from current storage
 	const allTodos = getTodos();
 
-	// Clear the list
 	todoListUL.innerHTML = "";
 
-	// Add storage indicator
 	const storageIndicator = document.createElement("div");
 	storageIndicator.className = "storage-indicator";
 
@@ -91,14 +74,12 @@ function updateTodoList() {
 
 	todoListUL.appendChild(storageIndicator);
 
-	// Add todos to the list
 	allTodos.forEach((todo, todoIndex) => {
 		const todoItem = createTodoItem(todo, todoIndex);
 		todoListUL.appendChild(todoItem);
 	});
 }
 
-// Create a todo item element
 function createTodoItem(todo, todoIndex) {
 	const todoText = todo.text;
 	const todoId = "todo-" + todoIndex;
@@ -121,13 +102,11 @@ function createTodoItem(todo, todoIndex) {
                 </button>
     `;
 
-	// Add event listener for delete button
 	const deleteButton = todoLI.querySelector(".delete-button");
 	deleteButton.addEventListener("click", () => {
 		deleteTodoItem(todoIndex);
 	});
 
-	// Add event listener for checkbox
 	const checkbox = todoLI.querySelector("input");
 	checkbox.addEventListener("change", () => {
 		const allTodos = getTodos();
@@ -135,13 +114,11 @@ function createTodoItem(todo, todoIndex) {
 		saveTodos(allTodos);
 	});
 
-	// Set checkbox state
 	checkbox.checked = todo.completed;
 
 	return todoLI;
 }
 
-// Delete a todo item
 function deleteTodoItem(todoIndex) {
 	let allTodos = getTodos();
 	allTodos = allTodos.filter((_, i) => i !== todoIndex);
@@ -149,7 +126,6 @@ function deleteTodoItem(todoIndex) {
 	updateTodoList();
 }
 
-// Clear all todos
 function clearAllTodos() {
 	switch (currentStorage) {
 		case "local":
@@ -165,7 +141,6 @@ function clearAllTodos() {
 	updateTodoList();
 }
 
-// Get todos from current storage
 function getTodos() {
 	let todosJson = "[]";
 
@@ -184,7 +159,6 @@ function getTodos() {
 	return JSON.parse(todosJson);
 }
 
-// Save todos to current storage
 function saveTodos(todos) {
 	const todosJson = JSON.stringify(todos);
 
@@ -196,7 +170,7 @@ function saveTodos(todos) {
 			sessionStorage.setItem("todos", todosJson);
 			break;
 		case "cookie":
-			setCookie("todos", todosJson, 30); // 30 days expiration
+			setCookie("todos", todosJson, 30);
 			break;
 	}
 }
